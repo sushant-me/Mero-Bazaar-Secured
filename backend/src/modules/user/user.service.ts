@@ -271,7 +271,12 @@ export class UserService {
 
   async remove(id: string) {
     await this.findOne(id);
-    return this.prisma.user.delete({ where: { id } });
+    // Return a projection, not the raw row: the deleted record still carries
+    // the bcrypt password hash and any live password-reset token.
+    return this.prisma.user.delete({
+      where: { id },
+      select: { id: true, email: true, role: true, isActive: true },
+    });
   }
 
   async updatePassword(

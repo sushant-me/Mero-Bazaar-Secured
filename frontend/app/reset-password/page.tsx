@@ -36,8 +36,6 @@ function ResetPasswordForm() {
 
     setIsSubmitting(true);
     try {
-      console.log('submitting with token:', token);
-      console.log('body:', { token, newPassword });
       const res = await fetch("/api/user/reset-password", {
         method: "POST",
         headers: { "Content-Type": "application/json" },

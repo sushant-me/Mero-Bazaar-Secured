@@ -129,9 +129,6 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
 
   callbacks: {
     async signIn({ user, account, profile }) {
-      console.log(" SIGNIN CALLBACK ");
-      console.log("Provider:", account?.provider);
-      console.log("User:", user);
       if (account && account.provider !== "credentials" && account.provider !== "otp") {
         const p = profile as OAuthProfile;
         const email = p?.email;
@@ -147,7 +144,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
             : true;
 
         if (!email || !emailVerified) {
-          console.error(`Unverified or missing email from ${account.provider}`, p);
+          console.error(`Unverified or missing email from ${account.provider}`);
           return false;
         }
 
@@ -168,7 +165,11 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         });
         const dbUser = await res.json();
         if (!res.ok) {
-          console.error("oauth-sync failed", account.provider, dbUser);
+          console.error(
+            "oauth-sync failed",
+            account.provider,
+            (dbUser as { id?: string } | null)?.id,
+          );
           return false;
         }
 

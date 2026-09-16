@@ -14,7 +14,7 @@ import { Test } from '@nestjs/testing';
 import { validate } from 'class-validator';
 import { plainToInstance } from 'class-transformer';
 import * as bcrypt from 'bcrypt';
-import { UserRole, OtpContext } from '@prisma/client';
+import { UserRole, OtpContext, ListingCategory } from '@prisma/client';
 
 import { AuthService } from './modules/auth/auth.service';
 import { RegisterDto } from './modules/auth/dto/register.dto';
@@ -26,6 +26,7 @@ import { VerificationService } from './modules/verification/verification.service
 import { MedicalService } from './modules/medical/medical.service';
 import { PhoneOtpService } from './modules/otp/otp.service';
 import { VehiclesService } from './modules/vehicles/vehicles.service';
+import { ListingsService } from './modules/listings/listings.service';
 import { assertVerifiedSeller } from './common/authz/seller-access';
 import { PrismaService } from './database/prisma.service';
 import { JwtService } from '@nestjs/jwt';
@@ -434,6 +435,48 @@ describe('Security regression: seller gate & trust flags', () => {
       vendorProfile: { isVerified: true },
     });
     await expect(assertVerifiedSeller(prisma, 'u1')).resolves.toBeUndefined();
+  });
+
+  it('generic listing create enforces the same KYC gate as the category services', async () => {
+    // Regression for the bypass where POST /listings (JwtAuthGuard only) reached
+    // ListingsService.create without the seller/KYC check the 8 category
+    // services already applied, letting any authenticated account publish.
+    const prisma = prismaMock();
+    const module = await Test.createTestingModule({
+      providers: [ListingsService, { provide: PrismaService, useValue: prisma }],
+    }).compile();
+    const listings = module.get(ListingsService);
+
+    const dto = { title: 't', price: 1, category: ListingCategory.VEHICLE };
+
+    // Plain USER - denied.
+    prisma.user.findUnique.mockResolvedValue({
+      role: UserRole.USER,
+      vendorProfile: null,
+    });
+    await expect(listings.create(dto as any, 'u1')).rejects.toThrow(
+      ForbiddenException,
+    );
+    expect(prisma.listing.create).not.toHaveBeenCalled();
+
+    // VENDOR whose KYC is still pending - denied.
+    prisma.user.findUnique.mockResolvedValue({
+      role: UserRole.VENDOR,
+      vendorProfile: { isVerified: false },
+    });
+    await expect(listings.create(dto as any, 'u1')).rejects.toThrow(
+      ForbiddenException,
+    );
+    expect(prisma.listing.create).not.toHaveBeenCalled();
+
+    // KYC-approved VENDOR - allowed.
+    prisma.user.findUnique.mockResolvedValue({
+      role: UserRole.VENDOR,
+      vendorProfile: { isVerified: true },
+    });
+    prisma.listing.create.mockResolvedValue({ id: 'l1' });
+    await expect(listings.create(dto as any, 'u1')).resolves.toEqual({ id: 'l1' });
+    expect(prisma.listing.create).toHaveBeenCalled();
   });
 
   it('vehicle create downgrades self-asserted bluebook verification', async () => {

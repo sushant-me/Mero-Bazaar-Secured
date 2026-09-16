@@ -63,7 +63,6 @@ export default function AuthErrorPage() {
 
   async function handleSubmit() {
     if (submittingRef.current) {
-      console.log("Already submitting...");
       return;
     }
 
@@ -84,22 +83,12 @@ export default function AuthErrorPage() {
     setOtpError("");
 
     try {
-      console.log("========== OTP SUBMIT ==========");
-      console.log("handleSubmit called");
-      console.log("tempToken:", pageState.tempToken);
-      console.log("provider:", pageState.provider);
-      console.log("otp:", otp);
-
-      console.log("Calling signIn...");
-
       const res = await signIn("otp", {
         tempToken: pageState.tempToken,
         otp,
         provider: pageState.provider,
         redirect: false,
       });
-
-      console.log("SIGNIN RESULT:", res);
 
       if (res?.error) {
         toast.error("Invalid or expired OTP");

@@ -8,7 +8,7 @@ import { json, urlencoded } from 'express';
 async function bootstrap() {
   if (!process.env.JWT_SECRET || process.env.JWT_SECRET.length < 32) {
     throw new Error(
-      'JWT_SECRET is missing or two short (need 32+ chars of entropy). Refusing to start.',
+      'JWT_SECRET is missing or too short (need 32+ chars of entropy). Refusing to start.',
     );
   }
 
