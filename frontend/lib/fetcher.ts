@@ -118,8 +118,6 @@ export async function fetchRelatedListings(
       images: string[];
       vehicle?: { bluebook_status: string };
     }>;
-    console.log("[fetchRelatedListings] raw data:", JSON.stringify(data, null, 2));
-
     if (!Array.isArray(data)) return [];
 
     const results: RelatedListing[] = [];

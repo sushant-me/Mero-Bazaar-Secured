@@ -178,16 +178,6 @@ export default function UserSettings() {
 
   useEffect(() => {
     if (!token) return;
-    try {
-      const payload = JSON.parse(atob(token.split(".")[1]));
-      console.log("Backend token exp:", new Date(payload.exp * 1000), "| now:", new Date());
-    } catch (e) {
-      console.log("Couldn't decode token", e);
-    }
-  }, [token]);
-
-  useEffect(() => {
-    if (!token) return;
     fetch("/api/user/notifications/security", {
       headers: { Authorization: `Bearer ${token}` },
     })

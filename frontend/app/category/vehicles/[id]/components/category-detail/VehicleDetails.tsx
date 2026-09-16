@@ -8,7 +8,6 @@ type Props = {
 
 export default function VehicleDetails({ type, details }: Props) {
   const labels = type ? VEHICLE_DETAILS_LABELS[type] : undefined;
-  console.log("type:", type, "labels:", labels, "details:", details);
 
   if (!labels) return null;
 

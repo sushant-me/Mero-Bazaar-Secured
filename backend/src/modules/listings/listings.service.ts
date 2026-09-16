@@ -5,12 +5,18 @@ import { UpdateListingDto } from './dto/update_listing.dto';
 import { SearchListingDto } from './dto/search_listing.dto';
 import { buildListingFilter } from '../../search/builders/listings_filter.builder';
 import { ListingCategory } from '@prisma/client';
+import { assertVerifiedSeller } from '../../common/authz/seller-access';
 
 @Injectable()
 export class ListingsService {
   constructor(private prisma: PrismaService) {}
 
   async create(dto: CreateListingDto, userId: string) {
+    // Generic publication path: it accepts any ListingCategory, so it must
+    // enforce the same KYC gate as the per-category services. Without this,
+    // POST /listings let any authenticated account publish without KYC.
+    await assertVerifiedSeller(this.prisma, userId);
+
     return this.prisma.listing.create({
       data: {
         title: dto.title,
