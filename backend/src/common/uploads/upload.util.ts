@@ -19,7 +19,7 @@
  *   3. `validateAndReencodeImage` - the authoritative gate. Reads the real
  *                                   magic bytes with `file-type`, then
  *                                   decodes and re-encodes through `sharp`.
- *                                   Only a genuine, decodable JPEG/PNG can
+ *                                   Only a genuine, decodable JPEG/PNG/WebP can
  *                                   survive that round trip, which strips
  *                                   trailing payloads, embedded scripts and
  *                                   EXIF metadata. A rejection deletes the
@@ -35,17 +35,21 @@ import * as crypto from 'crypto';
 import * as fs from 'fs/promises';
 import sharp from 'sharp';
 
-/** MIME types `file-type` may report for content we accept. */
-const ALLOWED_MIME = new Set(['image/jpeg', 'image/png']);
+/** MIME types `file-type` may report for content we accept. WebP is included
+ *  because several upload forms declare `accept="image/*"`; it is a plain
+ *  raster format and is re-encoded to JPEG like the others, so allowing it
+ *  does not weaken the control. */
+const ALLOWED_MIME = new Set(['image/jpeg', 'image/png', 'image/webp']);
 
 /** Extensions accepted by the (advisory) multer pre-filter. */
-const ALLOWED_EXT = new Set(['.jpg', '.jpeg', '.png']);
+const ALLOWED_EXT = new Set(['.jpg', '.jpeg', '.png', '.webp']);
 
 /** MIME types browsers send, including the common non-standard `image/jpg`. */
 const ALLOWED_CLIENT_MIME = new Set([
   'image/jpeg',
   'image/png',
   'image/jpg',
+  'image/webp',
 ]);
 
 /** Output is always JPEG, so every stored file gets a fresh `.jpg` name. */
@@ -106,8 +110,8 @@ export function serverFilename(
 }
 
 /**
- * Verifies that `tempPath` really is a JPEG or PNG, re-encodes it to a clean
- * JPEG inside `destDir`, and deletes the temporary file.
+ * Verifies that `tempPath` really is a JPEG, PNG or WebP, re-encodes it to
+ * a clean JPEG inside `destDir`, and deletes the temporary file.
  *
  * @returns the basename of the re-encoded file, so callers can build a public
  *          path such as `/uploads/vehicles/<name>`.
@@ -123,7 +127,7 @@ export async function validateAndReencodeImage(
   if (!detected || !ALLOWED_MIME.has(detected.mime)) {
     await safeUnlink(tempPath);
     throw new BadRequestException(
-      'File content does not match an allowed image type (JPEG or PNG).',
+      'File content does not match an allowed image type (JPEG, PNG or WebP).',
     );
   }
 

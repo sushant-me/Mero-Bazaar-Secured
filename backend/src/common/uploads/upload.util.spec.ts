@@ -51,6 +51,16 @@ describe('imageFileFilter (advisory pre-filter)', () => {
     expect(accept).toHaveBeenCalledWith(null, true);
   });
 
+  it('accepts WebP, which accept="image/*" forms can produce', () => {
+    const accept = jest.fn();
+    imageFileFilter(
+      {},
+      multerFile({ originalname: 'x.webp', mimetype: 'image/webp' }),
+      accept,
+    );
+    expect(accept).toHaveBeenCalledWith(null, true);
+  });
+
   it('rejects an SVG even though the browser calls it an image', () => {
     const accept = jest.fn();
     imageFileFilter(
@@ -162,6 +172,33 @@ describe('validateAndReencodeImage', () => {
     expect(metadata.format).toBe('jpeg');
 
     // The client's original bytes are gone.
+    await expect(fs.access(tempPath)).rejects.toThrow();
+  });
+
+  it('accepts a real WebP and re-encodes it to a JPEG', async () => {
+    const tempPath = join(dir, 'real.webp');
+    await sharp({
+      create: {
+        width: 8,
+        height: 8,
+        channels: 3,
+        background: { r: 30, g: 120, b: 200 },
+      },
+    })
+      .webp()
+      .toFile(tempPath);
+    mockedFileTypeFromFile.mockResolvedValue({
+      ext: 'webp',
+      mime: 'image/webp',
+    });
+
+    const destDir = join(dir, 'out-webp');
+    const finalName = await validateAndReencodeImage(tempPath, destDir);
+
+    expect(finalName).toMatch(/^[0-9a-f]{32}\.jpg$/);
+    const metadata = await sharp(join(destDir, finalName)).metadata();
+    expect(metadata.format).toBe('jpeg');
+
     await expect(fs.access(tempPath)).rejects.toThrow();
   });
 
