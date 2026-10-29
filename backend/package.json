@@ -97,5 +97,10 @@
   },
   "prisma": {
     "seed": "ts-node prisma/seed.ts"
+  },
+  "overrides": {
+    "@nestjs/platform-express": {
+      "multer": "^2.5.0"
+    }
   }
 }
