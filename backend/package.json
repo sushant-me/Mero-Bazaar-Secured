@@ -39,7 +39,7 @@
     "class-validator": "^0.15.1",
     "file-type": "^21.3.4",
     "multer": "^2.5.0",
-    "node-forge": "^1.4.0",
+    "node-forge": "^1.4.3",
     "nodemailer": "^10.2.1",
     "passport": "^0.7.0",
     "passport-jwt": "^4.0.1",
